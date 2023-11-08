@@ -27,13 +27,11 @@ def arg_parse(parser):
     
     parser.add_argument('--epoch', type=int, default=50, help='Epoch')
     parser.add_argument('--lr', type=float, default=0.01, help='Learning rate')
-    parser.add_argument('--step', type=str2bool, nargs='?', const=True, default=False, help='StepLR scheduler')
     parser.add_argument('--stepsize', type=int, default=50, help='StepLR schedular step_size')
     parser.add_argument('--gamma', type=float, default=0.1, help='StepLR scheduler gamma value')
-    parser.add_argument('--wd', type=float, default=0.001, help='Weight decay')
-    parser.add_argument('--device', type=int, default=1, help='CUDA device')
+    parser.add_argument('--device', type=int, default=0, help='CUDA device')
 
-    return parser
+    return parser.parse_args()
 
 def select_model(model_name):
     if model_name == 'Conv4':
@@ -47,19 +45,21 @@ def select_model(model_name):
     
     return model
 
-def train(model, criterion, optimizer, trainloader):
+def train(model, criterion, optimizer, trainloader, device):
     model.train()
     
     train_loss = 0
+    loss = 0
     train_acc = 0
     for data, target in trainloader:
         optimizer.zero_grad()
         data, target = data.to(device), target.to(device)
         output = model(data)
-        train_loss += criterion(output, target).item()
+        loss = criterion(output, target)
+        train_loss += loss.item()
         pred = output.argmax(dim=1, keepdim=True)
         train_acc += pred.eq(target.view_as(pred)).sum().item()
-        criterion.backward()
+        loss.backward()
         optimizer.step()
     
     train_loss = train_loss / len(trainloader.dataset)
@@ -67,7 +67,7 @@ def train(model, criterion, optimizer, trainloader):
     
     return train_loss, train_acc
 
-def validation(model, criterion, validloader):
+def validation(model, criterion, validloader, device):
     model.eval()
     
     valid_loss = 0
@@ -85,7 +85,7 @@ def validation(model, criterion, validloader):
     
     return valid_loss, valid_acc
     
-def test(model, criterion, testloader, checkpt):
+def test(model, criterion, testloader, checkpt, device):
     model.load_state_dict(torch.load(checkpt))
     model.eval()
     
@@ -104,43 +104,40 @@ def test(model, criterion, testloader, checkpt):
     
     return test_loss, test_acc
 
-if __name__ == 'main':
-    print("엥")
+if __name__ == '__main__':
     # arguments parsing
     args = arg_parse(argparse.ArgumentParser())
     
-    print("잉")
     # random seed
     np.random.seed(2023)
     torch.manual_seed(2023)
     
     # cuda device
-    device = torch.device("cuda:" + str(args.device))
+    conf = dict()
+    conf['device'] = torch.device("cuda:" + str(args.device))
+    conf = dict(conf, **args.__dict__)
     
     # dataset load
-    trainloader, validloader, testloader = datasetload()
+    trainloader, validloader, testloader = datasetload(conf['dataset'])
     
     # experiment setting values
-    if args.step == True:
-        setting = "epoch"+str(args.epoch)+"_lr:"+str(args.lr)+"_stepsize:"+str(args.stepsize) + "_gamma:"+str(args.gamma)+"_wd:"+str(args.wd)
-    else:
-        setting = "epoch"+str(args.epoch)+"lr:"+str(args.lr)+"_wd:"+str(args.wd)
+    setting = "epoch:"+str(conf['epoch'])+"_lr:"+str(conf['lr'])+"_stepsize:"+str(conf['stepsize']) + "_gamma:"+str(conf['gamma'])
     
     # checkpoint file path & model define
-    if args.mode == 'pre':
-        checkpt = "./model/weight/pretrain/"+str(args.model)+"/"+str(args.dataset)+"_"+setting+".pt"
-        board_name = str(args.model)+"/"+str(args.dataset)+"_"+setting
+    if conf['mode'] == 'pre':
+        checkpt = "./model/weight/pretrain/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
+        board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
         writer = SummaryWriter("./results/log/pretrain/"+board_name)
-        model = select_model(args.model).to(device)
-    # elif args.mode == 'fine'
-    #     if args.finetune == 'custom':
-    #         checkpt = "./model/weight/finetune/custum/"+str(args.model)+"/"+str(args.dataset)+"_"+setting+".pt"
-    #         board_name = str(args.model)+"/"+str(args.dataset)+"_"+setting
+        model = select_model(conf['model']).to(conf['device'])
+    # elif conf['mode'] == 'fine'
+    #     if conf['finetune'] == 'custom':
+    #         checkpt = "./model/weight/finetune/custum/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
+    #         board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
     #         writer = SummaryWriter("./results/log/finetune/custom/"+board_name)
     #         model = custom().to(device)
-    #     elif args.finetune == 'optimal':
-    #         checkpt = "./model/weight/finetune/optimal/"+str(args.model)+"/"+str(args.dataset)+"_"+setting+".pt"
-    #         board_name = str(args.model)+"/"+str(args.dataset)+"_"+setting
+    #     elif conf['finetune'] == 'optimal':
+    #         checkpt = "./model/weight/finetune/optimal/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
+    #         board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
     #         writer = SummaryWriter("./results/log/finetune/optimal"+board_name)
     #         model = optimal().to(device)
     #     else:
@@ -148,22 +145,22 @@ if __name__ == 'main':
     # else:
     #    raise ValueError(f'Invalid mode input')
     
-    print('model: ', args.model, ' dataset:', args.dataset, 'mode')
+    print('model: ', conf['model'], ' dataset:', conf['dataset'], 'mode:', conf['mode'])
     print('Experiment Setting: ', setting)
     
     # loss, optimizer define
-    criterion = nn.CrossEntropyLoss().to(device)
-    optimizer = optim(model.parameters(), lr=args.lr, weight_decay=args.wd)
-    if args.step == True:
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=args.stepsize, gamma=args.gamma)
+    criterion = nn.CrossEntropyLoss().to(conf['device'])
+    optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=conf['lr'])
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=conf['stepsize'], eta_min=0.0001)
+    # scheduler = lr_scheduler.StepLR(optimizer, step_size=conf['stepsize'], gamma=conf['gamma'])
     
     print('Start training')
     best = 99999999
     best_epoch = 0
     bad_count = 0
-    for epoch in range(args.epoch):
-        train_loss, train_acc = train(model, criterion, optimizer, trainloader, device)
-        valid_loss, valid_acc = validation(model, criterion, validloader, device)
+    for epoch in range(conf['epoch']):
+        train_loss, train_acc = train(model, criterion, optimizer, trainloader, conf['device'])
+        valid_loss, valid_acc = validation(model, criterion, validloader, conf['device'])
         if (epoch + 1) % 5 == 0:
             print('Epoch:{:04d}'.format(epoch+1), 'train loss:{:.3f}'.format(train_loss), 'acc:{:.2f}'.format(train_acc))
             print('validation loss:{:.3f}'.format(valid_loss), 'acc:{:.2f}'.format(valid_acc))
@@ -175,7 +172,7 @@ if __name__ == 'main':
         else:
             bad_count += 1
         
-        if bad_count == 10:
+        if bad_count == 30:
             break
         
         writer.add_scalar('Loss/train', train_loss, epoch)
@@ -183,9 +180,11 @@ if __name__ == 'main':
         
         writer.add_scalar('Loss/val', valid_loss, epoch)
         writer.add_scalar('Acc/val', valid_acc, epoch)
+        
+        scheduler.step()
     print('Finish')
     print('start test')
     
-    test_loss, test_acc = test(model, criterion, testloader, checkpt, device)
+    test_loss, test_acc = test(model, criterion, testloader, checkpt, conf['device'])
     print('Load {}th epoch'.format(best_epoch))
     print('test loss:{:.3f}'.format(test_loss), 'acc:{:.2f}'.format(test_acc))

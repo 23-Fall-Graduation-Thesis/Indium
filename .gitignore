@@ -1,1 +1,5 @@
 test.ipynb
+
+data/cifar10/cifar-10-batches-py/
+*.gz
+data/svhn/
