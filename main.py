@@ -121,7 +121,7 @@ if __name__ == '__main__':
     trainloader, validloader, testloader = datasetload(conf['dataset'])
     
     # experiment setting values
-    setting = "epoch:"+str(conf['epoch'])+"_lr:"+str(conf['lr'])+"_stepsize:"+str(conf['stepsize']) + "_gamma:"+str(conf['gamma'])
+    setting = "epoch"+str(conf['epoch'])+"_lr"+str(conf['lr'])+"_stepsize"+str(conf['stepsize']) + "_gamma"+str(conf['gamma'])
     
     # checkpoint file path & model define
     if conf['mode'] == 'pre':
