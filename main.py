@@ -6,7 +6,9 @@ import numpy as np
 import argparse
 from model.models import Conv4
 from dataset_dir.datasets import datasetload
+from finetune import *
 from torch.utils.tensorboard import SummaryWriter
+
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -124,26 +126,27 @@ if __name__ == '__main__':
     setting = "epoch"+str(conf['epoch'])+"_lr"+str(conf['lr'])+"_stepsize"+str(conf['stepsize']) + "_gamma"+str(conf['gamma'])
     
     # checkpoint file path & model define
+    model = select_model(conf['model']).to(conf['device'])
+    layers = None
     if conf['mode'] == 'pre':
         checkpt = "./model/weight/pretrain/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
         board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
         writer = SummaryWriter("./results/log/pretrain/"+board_name)
-        model = select_model(conf['model']).to(conf['device'])
-    # elif conf['mode'] == 'fine'
-    #     if conf['finetune'] == 'custom':
-    #         checkpt = "./model/weight/finetune/custum/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
-    #         board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
-    #         writer = SummaryWriter("./results/log/finetune/custom/"+board_name)
-    #         model = custom().to(device)
-    #     elif conf['finetune'] == 'optimal':
-    #         checkpt = "./model/weight/finetune/optimal/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
-    #         board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
-    #         writer = SummaryWriter("./results/log/finetune/optimal"+board_name)
-    #         model = optimal().to(device)
-    #     else:
-    #         raise ValueError(f'Invalid finetune mode input.')
-    # else:
-    #    raise ValueError(f'Invalid mode input')
+    elif conf['mode'] == 'fine':
+        if conf['finetune'] == 'custom':
+            checkpt = "./model/weight/finetune/custom/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
+            board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
+            writer = SummaryWriter("./results/log/finetune/custom/"+board_name)
+            model = custom_finetuning(model, layers).to(conf['device'])
+        elif conf['finetune'] == 'optimal':
+            checkpt = "./model/weight/finetune/optimal/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
+            board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
+            writer = SummaryWriter("./results/log/finetune/optimal"+board_name)
+            model = optimal_finetuning(model).to(conf['device'])
+        else:
+            raise ValueError(f'Invalid finetune mode input.')
+    else:
+       raise ValueError(f'Invalid mode input')
     
     print('model: ', conf['model'], ' dataset:', conf['dataset'], 'mode:', conf['mode'])
     print('Experiment Setting: ', setting)
