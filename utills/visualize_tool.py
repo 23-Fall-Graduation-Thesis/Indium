@@ -1,0 +1,81 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
+from torchvision import utils
+import numpy as np
+import torch
+from get_data import get_feature_maps, get_numerical_weight
+
+"""def visTensor(tensor, ch=0, allkernels=False, nrow=8, padding=1): 
+    n,c,w,h = tensor.shape
+    if allkernels: tensor = tensor.view(n*c, -1, w, h)
+    elif c != 3: tensor = tensor[:,ch,:,:].unsqueeze(dim=1)
+
+    rows = np.min((tensor.shape[0] // nrow + 1, 64))    
+    grid = utils.make_grid(tensor, nrow=nrow, normalize=True, padding=padding)
+    plt.figure( figsize=(nrow,rows) )
+    plt.imshow(grid.numpy().transpose((1, 2, 0)))
+    return"""
+
+def visTensor(tensor, ncols=8 , showAll=False):
+    # only use FIRST CHANNEL #TODO 
+    n, c, w, h = tensor.shape
+    nrows = n // ncols + (1 if n % ncols else 0)
+    
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols, nrows))
+    for i in range(n):
+        ax = axes[i // ncols, i % ncols]
+        kernel = tensor[i, 0, :, :] if n > 1 else tensor[i, :, :]
+        ax.imshow(kernel, cmap='viridis')
+        ax.axis('off')
+    plt.show()
+
+def filters_visualize(model, layer_name, ncols=8, showAll=False):
+    flag = False
+    for name, layer in model.named_modules():
+        if name == layer_name:
+            flag = True
+            weights = layer.weight.data.clone()
+            break
+    if not flag :
+        print(f'Undefined Layer.')
+        return
+    
+    print(weights.shape)
+    visTensor(weights, ncols, showAll)
+
+    
+def feature_map_visualize(model, image):
+    image = torch.randn(1, 1, 28, 28)
+    layers, feature_maps = get_feature_maps(model, image)
+    for i, feature_map in enumerate(feature_maps):
+        n_filters = feature_map.shape[1]
+
+        fig, axes = plt.subplots(1, n_filters, figsize=(n_filters * 2, 2))
+        for j in range(n_filters):
+            if n_filters == 1:
+                ax = axes
+            else:
+                ax = axes[j]
+            ax.imshow(feature_map[0, j, :, :].detach(), cmap='gray')
+            ax.axis('off')
+        plt.show()
+
+def weight_distribution_visualize(model):
+    means, variances, weight_df = get_numerical_weight(model)
+    
+    plt.figure(figsize=(10, 5))
+    plt.plot(means, label='Mean')
+    plt.plot(variances, label='Variance')
+    plt.xlabel('Kernel Index')
+    plt.ylabel('Value')
+    plt.title('Kernel Weights Statistics (Mean and Variance)')
+    plt.legend()
+    plt.show()
+    
+    # 바이올린 플롯 생성
+    plt.figure(figsize=(12, 6))
+    sns.violinplot(x='Layer', y='Weights', data=weight_df)
+    plt.xlabel('Convolution Layer Number')
+    plt.ylabel('Weights')
+    plt.title('Weight Distribution in Convolutional Layers')
+    plt.show()
