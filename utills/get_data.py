@@ -2,20 +2,26 @@ import torch
 import torch.nn as nn
 import pandas as pd
 
-def get_feature_maps(model, image):
-    layers = []
+def get_all_feature_maps(model, image):
     feature_maps = []
+    hooks = []
 
     def hook_fn(module, input, output):
-        if isinstance(module, nn.Conv2d):
+        if isinstance(module, torch.nn.Conv2d):
             feature_maps.append(output)
 
     for layer in model.children():
-        if isinstance(layer, nn.Conv2d):
-            layers.append(layer)
-            layer.register_forward_hook(hook_fn)
+        if isinstance(layer, torch.nn.Conv2d):
+            hook = layer.register_forward_hook(hook_fn)
+            hooks.append(hook)
 
-    return layers, feature_maps
+    with torch.no_grad():
+        model(image)
+
+    for hook in hooks:
+        hook.remove()
+
+    return feature_maps
 
 def get_feature_map(model, image):
     with torch.no_grad(): 
@@ -42,3 +48,8 @@ def get_numerical_weight(model):
     weight_df = pd.DataFrame({'Layer': layer_index, 'Weights': weights_data})
 
     return means, variances, weight_df
+
+def get_activation(name):
+    def hook(model, input, output):
+        activation[name] = output.detach()
+    return hook

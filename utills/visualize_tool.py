@@ -3,7 +3,7 @@ import seaborn as sns
 from torchvision import utils
 import numpy as np
 import torch
-from get_data import get_feature_maps, get_numerical_weight
+from get_data import get_all_feature_maps, get_numerical_weight
 
 """def visTensor(tensor, ch=0, allkernels=False, nrow=8, padding=1): 
     n,c,w,h = tensor.shape
@@ -44,21 +44,19 @@ def filters_visualize(model, layer_name, ncols=8, showAll=False):
     visTensor(weights, ncols, showAll)
 
     
-def feature_map_visualize(model, image):
-    image = torch.randn(1, 1, 28, 28)
-    layers, feature_maps = get_feature_maps(model, image)
+def feature_map_visualize(model, image, cols=4):
+    feature_maps = get_all_feature_maps(model, image)
+    num_layers = len(feature_maps)    
+    rows = num_layers // cols + (1 if num_layers % cols else 0)
+    plt.figure(figsize=(20, rows * 3))
     for i, feature_map in enumerate(feature_maps):
-        n_filters = feature_map.shape[1]
+        plt.subplot(rows, cols, i+1)
+        plt.imshow(feature_map[0, 0].cpu().detach(), cmap='viridis')
+        plt.title(f'Layer {i+1}')
+        plt.axis('off')
 
-        fig, axes = plt.subplots(1, n_filters, figsize=(n_filters * 2, 2))
-        for j in range(n_filters):
-            if n_filters == 1:
-                ax = axes
-            else:
-                ax = axes[j]
-            ax.imshow(feature_map[0, j, :, :].detach(), cmap='gray')
-            ax.axis('off')
-        plt.show()
+    plt.tight_layout()
+    plt.show()
 
 def weight_distribution_visualize(model):
     means, variances, weight_df = get_numerical_weight(model)
