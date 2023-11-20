@@ -1,2 +1,2 @@
 # cifar10 - Conv4
-python3 -u main.py --dataset cifar10 --model Conv4 --mode pre --epoch 100 stepsize 30 -gamma 0.1
+python3 -u main.py --dataset cifar10 --model resnet18 --mode cus --epoch 100 -lr 0.001
