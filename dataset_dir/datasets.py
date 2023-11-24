@@ -2,7 +2,7 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
-import dataset_dir.cub200
+from dataset_dir.cub200 import Cub2011
 
 def datasetload(dataset_name):
     if dataset_name == 'cifar10':
@@ -94,7 +94,7 @@ def CUB200():
     
     batch_size = 64
     
-    train_dataset = cub200.Cub2011(root='./data/cub-200-2011', transform=transform, download=True, train=True)
+    train_dataset = Cub2011(root='./data/cub-200-2011', transform=transform, download=True, train=True)
     dataset_size = len(train_dataset)
     train_size = int(dataset_size * 0.8)
     valid_size = dataset_size - train_size
@@ -103,7 +103,7 @@ def CUB200():
     trainloader = DataLoader(trainset, batch_size, shuffle=True, drop_last=True, num_workers=2)
     validloader = DataLoader(validset, batch_size, shuffle=True, drop_last=True, num_workers=2)
     
-    test_dataset = cub200.Cub2011(root='./data/cub-200-2011')
+    test_dataset = Cub2011(root='./data/cub-200-2011')
     testloader = DataLoader(test_dataset, batch_size, shuffle=False, drop_last=True, num_workers=2)
     
     return trainloader, validloader, testloader

@@ -4,6 +4,7 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 import numpy as np
 import argparse
+from model.models import Conv4
 from model.pretrained_models import get_pretrain_model
 from dataset_dir.datasets import datasetload
 from finetune import *
@@ -24,15 +25,21 @@ def arg_parse(parser):
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', default='cifar10', help='Dataset type')
     parser.add_argument('--model', default='Conv4', help='Model type')
-    parser.add_argument('--mode', type=str, default='cus', help='custom(cus) or optimal(opt)')
+    parser.add_argument('--pretrain', type=str2bool, nargs='?', const=True, default=False, help="Pretrain")
+    parser.add_argument('--mode', type=str, default='cus', help='Custom(cus) or Optimal(opt)')
+    parser.add_argument('--freeze', type=str, default='1111', help='Layer freezing 0 : freeze, 1 : not freeze')
     
     parser.add_argument('--epoch', type=int, default=50, help='Epoch')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
-    parser.add_argument('--stepsize', type=int, default=50, help='StepLR schedular step_size')
-    parser.add_argument('--gamma', type=float, default=0.1, help='StepLR scheduler gamma value')
     parser.add_argument('--device', type=int, default=0, help='CUDA device')
 
     return parser.parse_args()
+
+def select_model(name):
+    if name == 'Conv4':
+        return Conv4()
+    else:
+        raise ValueError(f'Invalid mode name.')
 
 def train(model, criterion, optimizer, trainloader, device):
     model.train()
@@ -110,32 +117,41 @@ if __name__ == '__main__':
     trainloader, validloader, testloader = datasetload(conf['dataset'])
     
     # experiment setting values
-    setting = "epoch"+str(conf['epoch'])+"_lr"+str(conf['lr'])+"_stepsize"+str(conf['stepsize']) + "_gamma"+str(conf['gamma'])
+    setting = "epoch"+str(conf['epoch'])+"_lr"+str(conf['lr'])
     
-    # checkpoint file path & model define
-    model = get_pretrain_model(conf['model']).to(conf['device'])
-    layers = None
-    if conf['mode'] == 'cus': # custom mode
-        checkpt = "./model/weight/custom/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
+    if conf['pretrain'] == True:
+        model = select_model(conf['model']).to(conf['device'])
+        checkpt = "./model/weight/pretrain/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
         board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
-        writer = SummaryWriter("./results/log/custom/"+board_name)
-        model = custom_finetuning(model, layers).to(conf['device'])
-    elif conf['mode'] == 'opt': # optimal mode
-        checkpt = "./model/weight/optimal/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
-        board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
-        writer = SummaryWriter("./results/log/optimal/"+board_name)
-        model = optimal_finetuning(model).to(conf['device'])
+        writer = SummaryWriter("./results/log/pretrain/"+board_name)
+        
+        print('model:', conf['model'], ' dataset:', conf['dataset'], 'pretrain: ', conf['pretrain'])
     else:
-        raise ValueError(f'Invalid finetune mode input.')
+        # pretrained model load
+        model = get_pretrain_model(conf['model']).to(conf['device'])
+        
+        # save name setting & model layer selection
+        if conf['mode'] == 'cus': # custom mode
+            layers = conf['freeze']
+            model = custom_finetuning(model, layers).to(conf['device'])
+            checkpt = "./model/weight/custom/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
+            board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+"_freeze"+layers
+            writer = SummaryWriter("./results/log/custom/"+board_name)
+        elif conf['mode'] == 'opt': # optimal mode
+            model = optimal_finetuning(model).to(conf['device'])
+            checkpt = "./model/weight/optimal/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
+            board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
+            writer = SummaryWriter("./results/log/optimal/"+board_name)
+        else:
+            raise ValueError(f'Invalid finetune mode input.')
+        
+        print('model:', conf['model'], ' dataset:', conf['dataset'], 'fine-tuning mode:', conf['mode'], 'freeze: ', conf['freeze'])
     
-    print('model:', conf['model'], ' dataset:', conf['dataset'], 'fine-tuning mode:', conf['mode'])
-    print('Experiment Setting:', setting)
+    print('Experiment Setting:', setting, '|Croess-Entropy Loss|SGD optimizer')
     
     # loss, optimizer define
     criterion = nn.CrossEntropyLoss().to(conf['device'])
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=conf['lr'])
-    # scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=conf['stepsize'], eta_min=0.0001)
-    # scheduler = lr_scheduler.StepLR(optimizer, step_size=conf['stepsize'], gamma=conf['gamma'])
     
     print('Start training')
     best = 99999999
