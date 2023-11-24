@@ -2,7 +2,7 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
-import cub200
+import dataset_dir.cub200
 
 def datasetload(dataset_name):
     if dataset_name == 'cifar10':
@@ -15,10 +15,10 @@ def datasetload(dataset_name):
         return CUB200()
 
 def Cifar10():
-    transform = transforms.Compose(
+    transform = transforms.Compose([
         transforms.ToTensor(), 
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    )
+    ])
     
     batch_size = 64
     
