@@ -47,11 +47,11 @@ def Cifar10():
 def Cifar100():
     n_class = 100
 
-    transform = transforms.Compose(
+    transform = transforms.Compose([
         transforms.Resize(224),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    )
+    ])
     
     batch_size = 64
     
