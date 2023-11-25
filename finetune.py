@@ -1,22 +1,20 @@
 import torch
 
- # for test code
-from model.models import Conv4
 import torch.optim as optim
 from dataset_dir.datasets import datasetload
 import torch.nn as nn
 import copy
+import torchvision.models as models
 
 def custom_finetuning(model, layers=None):
     '''
     model : pretrained model
-    layers : list of layers to freeze, containing the names of the layers
+    layers : list of layers to update, containing the index of the layers
     '''
 
     # layer names for current model
     c_layers_name = []
     for name, param in model.named_parameters():
-        param.requires_grad = False
         if name[-6:] == 'weight':
             name = name[:-7]
         elif name[-4:] == 'bias':
@@ -30,16 +28,17 @@ def custom_finetuning(model, layers=None):
         for layer in c_layers_name:
             print(layer, end="  ")
         str = input("\n\nselect layers to freeze : ")
-        layers = str.strip().split(" ")
+        layers = str.strip() # binary
+
+    if len(layers)!=len(c_layers_name):
+        raise ValueError("Number of layers entered is different from the number of layers in the model")
 
     # check layer names & freeze input layers
-    for layer in layers:
-        if layer in c_layers_name:
-            for name, param in model.named_parameters():
-                if layer in name:
-                    param.requires_grad = True
+    for idx, (name, param) in enumerate(model.named_parameters()):
+        if layers[int(idx//2)] == "1":
+            param.requires_grad = True
         else:
-            raise ValueError(f"\nWrong name of layer : {layer}.")
+            param.requires_grad = False
         
     return model
 
@@ -76,7 +75,7 @@ def control_lr_finetuning(model, layers_lr=None):
     for layer in c_layers_name:
         print(layer, end="  ")
     str = input("\n\nset learning rate for each layer : ")
-    layer_lrs = str.strip().split(" ")
+    layer_lrs = str.strip()
     if len(layer_lrs)!= len(c_layers_name):
         raise ValueError('Wrong number of learning rates')
 
@@ -93,61 +92,24 @@ def control_lr_finetuning(model, layers_lr=None):
 
     return lr_list
 
+# test code
 def select_test():
     # test code 
-    origin_model = Conv4().cuda()
-    update_model = custom_finetuning(copy.deepcopy(origin_model))
+    weights = models.AlexNet_Weights.IMAGENET1K_V1
+    origin_model = models.alexnet(weights=weights).to('cuda')
+    update_model = custom_finetuning(copy.deepcopy(origin_model)).to('cuda')
 
     for name, param in update_model.named_parameters():
         print(f"name: {name}\t grad: {param.requires_grad}")
 
-    trainloader, validloader, testloader = datasetload('cifar10')
+    trainloader, _, _ = datasetload('cifar10')
     criterion = nn.CrossEntropyLoss().to('cuda')
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, update_model.parameters()), lr=0.1)
 
-    train_loss, train_acc = train(update_model, criterion, optimizer, trainloader, 'cuda')
+    _, _ = train(update_model, criterion, optimizer, trainloader, 'cuda')
 
-    for (name1, param1), (name2, param2) in zip(origin_model.named_parameters(), update_model.named_parameters()):
+    for (name1, param1), (_, param2) in zip(origin_model.named_parameters(), update_model.named_parameters()):
         print(f"name: {name1}\tupdate: {not torch.equal(param1, param2)}")
 
-def lr_test():
-    origin_model = Conv4().cuda()
-    update_model = copy.deepcopy(origin_model)
-    lr_list = control_lr_finetuning(update_model)
-
-    trainloader, validloader, testloader = datasetload('cifar10')
-    criterion = nn.CrossEntropyLoss().to('cuda')
-    optimizer = optim.SGD(lr_list, momentum=0.9, weight_decay=5e-4)
-
-    train_loss, train_acc = train(update_model, criterion, optimizer, trainloader, 'cuda')
-
-    for (name1, param1), (name2, param2) in zip(origin_model.named_parameters(), update_model.named_parameters()):
-        print(f"name: {name1}\tupdate: {not torch.equal(param1, param2)}")
-
-def train(model, criterion, optimizer, trainloader, device):
-    model.train()
-    
-    train_loss = 0
-    loss = 0
-    train_acc = 0
-    for data, target in trainloader:
-        optimizer.zero_grad()
-        data, target = data.to(device), target.to(device)
-        output = model(data)
-        loss = criterion(output, target)
-        train_loss += loss.item()
-        pred = output.argmax(dim=1, keepdim=True)
-        train_acc += pred.eq(target.view_as(pred)).sum().item()
-        loss.backward()
-        optimizer.step()
-    
-    train_loss = train_loss / len(trainloader.dataset)
-    train_acc = train_acc / len(trainloader.dataset) * 100
-    
-    return train_loss, train_acc
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     select_test()
-    # lr_test()
-    

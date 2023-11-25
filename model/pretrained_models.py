@@ -18,6 +18,9 @@ def get_pretrain_model(model_name):
     elif model_name == 'resnet152':
         weights = models.ResNet152_Weights
         model = models.resnet152(weights=weights)
+    elif model_name == 'alexnet':
+        weights = models.AlexNet_Weights.IMAGENET1K_V1
+        model = models.alexnet(weights=weights)
     elif model_name == 'vgg16':
         weights = models.VGG16_BN_Weights
         model = models.vgg16_bn(weights=weights)

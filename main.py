@@ -1,4 +1,4 @@
-import torch
+import torch, os
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
@@ -27,7 +27,7 @@ def arg_parse(parser):
     parser.add_argument('--model', default='Conv4', help='Model type')
     parser.add_argument('--pretrain', type=str2bool, nargs='?', const=True, default=False, help="Pretrain")
     parser.add_argument('--mode', type=str, default='cus', help='Custom(cus) or Optimal(opt)')
-    parser.add_argument('--freeze', type=str, default='1111', help='Layer freezing 0 : freeze, 1 : not freeze')
+    parser.add_argument('--freeze', type=str, default='11111111', help='Layer freezing 0 : freeze, 1 : not freeze')
     
     parser.add_argument('--epoch', type=int, default=50, help='Epoch')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
@@ -137,11 +137,13 @@ if __name__ == '__main__':
             checkpt = "./model/weight/custom/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
             board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+"_freeze"+layers
             writer = SummaryWriter("./results/log/custom/"+board_name)
+            os.makedirs("./model/weight/custom/"+str(conf['model'])+"/", exist_ok=True)
         elif conf['mode'] == 'opt': # optimal mode
             model = optimal_finetuning(model).to(conf['device'])
             checkpt = "./model/weight/optimal/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
             board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting
             writer = SummaryWriter("./results/log/optimal/"+board_name)
+            os.makedirs("./model/weight/optimal/"+str(conf['model'])+"/", exist_ok=True)
         else:
             raise ValueError(f'Invalid finetune mode input.')
         

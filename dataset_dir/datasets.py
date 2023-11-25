@@ -16,6 +16,7 @@ def datasetload(dataset_name):
 
 def Cifar10():
     transform = transforms.Compose([
+        transforms.Resize(224),
         transforms.ToTensor(), 
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
@@ -41,6 +42,7 @@ def Cifar10():
 
 def Cifar100():
     transform = transforms.Compose(
+        transforms.Resize(224),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     )
@@ -65,7 +67,7 @@ def Cifar100():
 
 def SVHN():
     transform = transforms.Compose([
-        transforms.CenterCrop(28),
+        transforms.Resize(224),
         transforms.ToTensor(), 
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
@@ -88,6 +90,7 @@ def SVHN():
 
 def CUB200():
     transform = transforms.Compose([
+        transforms.Resize(224),
         transforms.ToTensor(), 
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
