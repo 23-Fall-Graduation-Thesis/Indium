@@ -10,6 +10,8 @@ from dataset_dir.datasets import datasetload
 from finetune import *
 from torch.utils.tensorboard import SummaryWriter
 
+from tqdm import tqdm
+
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -47,7 +49,7 @@ def train(model, criterion, optimizer, trainloader, device):
     train_loss = 0
     loss = 0
     train_acc = 0
-    for data, target in trainloader:
+    for data, target in tqdm(trainloader, desc="train"):
         optimizer.zero_grad()
         data, target = data.to(device), target.to(device)
         output = model(data)
@@ -69,7 +71,7 @@ def validation(model, criterion, validloader, device):
     valid_loss = 0
     valid_acc = 0
     with torch.no_grad():
-        for data, target in validloader:
+        for data, target in tqdm(validloader, desc="val"):
             data, target = data.to(device), target.to(device)
             output = model(data)
             valid_loss += criterion(output, target).item()
@@ -155,7 +157,7 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss().to(conf['device'])
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=conf['lr'])
     
-    print('\tnStart training')
+    print('\nStart training')
     best = 99999999
     best_epoch = 0
     bad_count = 0
