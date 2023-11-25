@@ -1,28 +1,42 @@
 import os
+
 import pandas as pd
+from torchvision.datasets import VisionDataset
 from torchvision.datasets.folder import default_loader
-from torchvision.datasets.utils import download_url
-from torch.utils.data import Dataset
+from torchvision.datasets.utils import download_file_from_google_drive
 
 
-class Cub2011(Dataset):
+class Cub2011(VisionDataset):
+    """`CUB-200-2011 <http://www.vision.caltech.edu/visipedia/CUB-200-2011.html>`_ Dataset.
+
+        Args:
+            root (string): Root directory of the dataset.
+            train (bool, optional): If True, creates dataset from training set, otherwise
+               creates from test set.
+            transform (callable, optional): A function/transform that  takes in an PIL image
+               and returns a transformed version. E.g, ``transforms.RandomCrop``
+            target_transform (callable, optional): A function/transform that takes in the
+               target and transforms it.
+            download (bool, optional): If true, downloads the dataset from the internet and
+               puts it in root directory. If dataset is already downloaded, it is not
+               downloaded again.
+    """
     base_folder = 'CUB_200_2011/images'
-    url = 'http://www.vision.caltech.edu/visipedia-data/CUB-200-2011/CUB_200_2011.tgz'
+    # url = 'http://www.vision.caltech.edu/visipedia-data/CUB-200-2011/CUB_200_2011.tgz'
+    file_id = '1hbzc_P1FuxMkcabkgn9ZKinBwW683j45'
     filename = 'CUB_200_2011.tgz'
     tgz_md5 = '97eceeb196236b17998738112f37df78'
 
-    def __init__(self, root, train=True, transform=None, loader=default_loader, download=True):
-        self.root = os.path.expanduser(root)
-        self.transform = transform
+    def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
+        super(Cub2011, self).__init__(root, transform=transform, target_transform=target_transform)
+
         self.loader = default_loader
         self.train = train
-
         if download:
             self._download()
 
         if not self._check_integrity():
-            raise RuntimeError('Dataset not found or corrupted.' +
-                               ' You can use download=True to download it')
+            raise RuntimeError('Dataset not found or corrupted. You can use download=True to download it')
 
     def _load_metadata(self):
         images = pd.read_csv(os.path.join(self.root, 'CUB_200_2011', 'images.txt'), sep=' ',
@@ -35,6 +49,9 @@ class Cub2011(Dataset):
         data = images.merge(image_class_labels, on='img_id')
         self.data = data.merge(train_test_split, on='img_id')
 
+        class_names = pd.read_csv(os.path.join(self.root, 'CUB_200_2011', 'classes.txt'),
+                                  sep=' ', names=['class_name'], usecols=[1])
+        self.class_names = class_names['class_name'].to_list()
         if self.train:
             self.data = self.data[self.data.is_training_img == 1]
         else:
@@ -60,7 +77,7 @@ class Cub2011(Dataset):
             print('Files already downloaded and verified')
             return
 
-        download_url(self.url, self.root, self.filename, self.tgz_md5)
+        download_file_from_google_drive(self.file_id, self.root, self.filename, self.tgz_md5)
 
         with tarfile.open(os.path.join(self.root, self.filename), "r:gz") as tar:
             tar.extractall(path=self.root)
@@ -76,5 +93,6 @@ class Cub2011(Dataset):
 
         if self.transform is not None:
             img = self.transform(img)
-
+        if self.target_transform is not None:
+            target = self.target_transform(target)
         return img, target
