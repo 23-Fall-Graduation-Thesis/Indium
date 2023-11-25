@@ -114,7 +114,7 @@ if __name__ == '__main__':
     conf = dict(conf, **args.__dict__)
     
     # dataset load
-    trainloader, validloader, testloader = datasetload(conf['dataset'])
+    trainloader, validloader, testloader, num_class = datasetload(conf['dataset'])
     
     # experiment setting values
     setting = "epoch"+str(conf['epoch'])+"_lr"+str(conf['lr'])
@@ -128,7 +128,7 @@ if __name__ == '__main__':
         print('model:', conf['model'], ' dataset:', conf['dataset'], 'pretrain: ', conf['pretrain'])
     else:
         # pretrained model load
-        model = get_pretrain_model(conf['model']).to(conf['device'])
+        model = get_pretrain_model(conf['model'], num_class).to(conf['device'])
         
         # save name setting & model layer selection
         if conf['mode'] == 'cus': # custom mode
@@ -155,7 +155,7 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss().to(conf['device'])
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=conf['lr'])
     
-    print('Start training')
+    print('\tnStart training')
     best = 99999999
     best_epoch = 0
     bad_count = 0

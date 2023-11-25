@@ -14,7 +14,11 @@ def datasetload(dataset_name):
     elif dataset_name == 'cub':
         return CUB200()
 
+
+
 def Cifar10():
+    n_class = 10
+
     transform = transforms.Compose([
         transforms.Resize(224),
         transforms.ToTensor(), 
@@ -38,9 +42,11 @@ def Cifar10():
     
     # classes = {'plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'}
     
-    return trainloader, validloader, testloader
+    return trainloader, validloader, testloader, n_class
 
 def Cifar100():
+    n_class = 100
+
     transform = transforms.Compose(
         transforms.Resize(224),
         transforms.ToTensor(),
@@ -62,10 +68,12 @@ def Cifar100():
     testset = torchvision.datasets.CIFAR100(root='./data/cifar100', train=False, download=True, transform=transform)
     testloader = DataLoader(testset, batch_size, shuffle=False, drop_last=True, num_workers=2)
     
-    return trainloader, validloader, testloader
+    return trainloader, validloader, testloader, n_class
     
 
 def SVHN():
+    n_class = 10
+    
     transform = transforms.Compose([
         transforms.Resize(224),
         transforms.ToTensor(), 
@@ -86,9 +94,11 @@ def SVHN():
     validloader = DataLoader(valid_svhn, batch_size, shuffle=True, drop_last=True, num_workers=2)
     testloader = DataLoader(test_svhn, batch_size, shuffle=False, drop_last=True, num_workers=2)
     
-    return trainloader, validloader, testloader
+    return trainloader, validloader, testloader, n_class
 
 def CUB200():
+    n_class = 200
+
     transform = transforms.Compose([
         transforms.Resize(224),
         transforms.ToTensor(), 
@@ -109,4 +119,4 @@ def CUB200():
     test_dataset = Cub2011(root='./data/cub-200-2011')
     testloader = DataLoader(test_dataset, batch_size, shuffle=False, drop_last=True, num_workers=2)
     
-    return trainloader, validloader, testloader
+    return trainloader, validloader, testloader, n_class
