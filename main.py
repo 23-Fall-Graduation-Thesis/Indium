@@ -136,7 +136,7 @@ if __name__ == '__main__':
         if conf['mode'] == 'cus': # custom mode
             layers = conf['freeze']
             model = custom_finetuning(model, layers).to(conf['device'])
-            checkpt = "./model/weight/custom/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
+            checkpt = "./model/weight/custom/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+"_freeze"+layers+".pt"
             board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+"_freeze"+layers
             writer = SummaryWriter("./results/log/custom/"+board_name)
             os.makedirs("./model/weight/custom/"+str(conf['model'])+"/", exist_ok=True)
