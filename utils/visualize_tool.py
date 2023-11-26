@@ -3,7 +3,7 @@ import seaborn as sns
 from torchvision import utils
 import numpy as np
 import torch
-from get_data import get_all_feature_maps, get_numerical_weight
+from utils.get_data import get_all_feature_maps, get_numerical_weight
 
 """def visTensor(tensor, ch=0, allkernels=False, nrow=8, padding=1): 
     n,c,w,h = tensor.shape
@@ -16,7 +16,7 @@ from get_data import get_all_feature_maps, get_numerical_weight
     plt.imshow(grid.numpy().transpose((1, 2, 0)))
     return"""
 
-def visTensor(tensor, ncols=8 , showAll=False):
+def visTensor(tensor, layer_name, ncols=32 , showAll=False):
     # only use FIRST CHANNEL #TODO 
     n, c, w, h = tensor.shape
     nrows = n // ncols + (1 if n % ncols else 0)
@@ -27,9 +27,10 @@ def visTensor(tensor, ncols=8 , showAll=False):
         kernel = tensor[i, 0, :, :] if n > 1 else tensor[i, :, :]
         ax.imshow(kernel, cmap='viridis')
         ax.axis('off')
+    plt.title('Layer', layer_name)
     plt.show()
 
-def filters_visualize(model, layer_name, ncols=8, showAll=False):
+def filters_visualize(model, layer_name, ncols=32, showAll=False):
     flag = False
     for name, layer in model.named_modules():
         if name == layer_name:
@@ -44,7 +45,7 @@ def filters_visualize(model, layer_name, ncols=8, showAll=False):
     visTensor(weights, ncols, showAll)
 
     
-def feature_map_visualize(model, image, cols=4):
+def feature_map_visualize(model, image, cols=32):
     feature_maps = get_all_feature_maps(model, image)
     num_layers = len(feature_maps)    
     rows = num_layers // cols + (1 if num_layers % cols else 0)
@@ -69,8 +70,7 @@ def weight_distribution_visualize(model):
     plt.title('Kernel Weights Statistics (Mean and Variance)')
     plt.legend()
     plt.show()
-    
-    # 바이올린 플롯 생성
+
     plt.figure(figsize=(12, 6))
     sns.violinplot(x='Layer', y='Weights', data=weight_df)
     plt.xlabel('Convolution Layer Number')

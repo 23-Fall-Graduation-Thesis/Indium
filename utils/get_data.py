@@ -53,3 +53,35 @@ def get_activation(name):
     def hook(model, input, output):
         activation[name] = output.detach()
     return hook
+
+def hook_fn(module, input, output):
+    module.output = output
+
+def addHook(model, hook):
+    for layer in model.children():
+        if len(list(layer.children())) > 0: # if module has children -> sequential
+            addHook(layer, hook)
+
+        else:
+            layer.register_forward_hook(hook)
+
+def collectOutput(model, output_list):
+    for layer in model.children():
+        if len(list(layer.children())) > 0: # if module has children -> sequential
+            collectOutput(layer, output_list)
+        
+        elif type(layer) == nn.ParameterList:
+            return
+
+        else:
+            output = layer.output
+            output_list.append(output)
+
+def getName(model, name_list):
+    for layer in model.children():
+        if len(list(layer.children())) > 0: # if module has children -> sequential
+            getName(layer, name_list)
+
+        else:
+            layer_name = str(layer)[:str(layer).index("(")] + str(len(list(filter(lambda x:str(layer)[:str(layer).index("(")] in x, name_list))))
+            name_list.append(layer_name)
