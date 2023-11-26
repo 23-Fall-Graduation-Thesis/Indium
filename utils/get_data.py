@@ -54,6 +54,10 @@ def get_activation(name):
         activation[name] = output.detach()
     return hook
 
+#
+#
+#
+
 def hook_fn(module, input, output):
     module.output = output
 

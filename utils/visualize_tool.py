@@ -5,17 +5,6 @@ import numpy as np
 import torch
 from utils.get_data import get_all_feature_maps, get_numerical_weight
 
-"""def visTensor(tensor, ch=0, allkernels=False, nrow=8, padding=1): 
-    n,c,w,h = tensor.shape
-    if allkernels: tensor = tensor.view(n*c, -1, w, h)
-    elif c != 3: tensor = tensor[:,ch,:,:].unsqueeze(dim=1)
-
-    rows = np.min((tensor.shape[0] // nrow + 1, 64))    
-    grid = utils.make_grid(tensor, nrow=nrow, normalize=True, padding=padding)
-    plt.figure( figsize=(nrow,rows) )
-    plt.imshow(grid.numpy().transpose((1, 2, 0)))
-    return"""
-
 def visTensor(tensor, layer_name, ncols=32 , showAll=False):
     # only use FIRST CHANNEL #TODO 
     n, c, w, h = tensor.shape
@@ -29,6 +18,7 @@ def visTensor(tensor, layer_name, ncols=32 , showAll=False):
         ax.axis('off')
     plt.title('Layer', layer_name)
     plt.show()
+
 
 def filters_visualize(model, layer_name, ncols=32, showAll=False):
     flag = False
@@ -58,6 +48,7 @@ def feature_map_visualize(model, image, cols=32):
 
     plt.tight_layout()
     plt.show()
+
 
 def weight_distribution_visualize(model):
     means, variances, weight_df = get_numerical_weight(model)
