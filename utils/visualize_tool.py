@@ -3,6 +3,7 @@ import seaborn as sns
 from torchvision import utils
 import numpy as np
 import torch
+import os
 from utils.get_data import *
 from utils.util_functions import *
 
@@ -75,3 +76,36 @@ def visualize_weight_distribution(model, violin_sample=1000):
     plt.xticks([1, 2, 3, 4, 5], ['1', '2', '3', '4', '5'])
     sns.violinplot(x='Layer', y='Weights', data=sampled_df)
     plt.show()
+
+
+def visualize_class_activation_images(org_img, activation_map, dataset, freeze, layer_num, show=True, save=False):
+    """
+        Saves cam activation map and activation map on the original image
+
+    Args:
+        org_img (PIL img): Original image
+        activation_map (numpy arr): Activation map (grayscale) 0-255
+        file_name (str): File name of the exported image
+    """
+    if not os.path.exists('./results/LayerCAM'):
+        os.makedirs('./results/LayerCAM')
+        
+    # Grayscale activation map
+    heatmap, heatmap_on_image = apply_colormap_on_image(org_img, activation_map, 'hsv')
+    
+    if show:
+        images = [heatmap, heatmap_on_image, activation_map]
+        fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10, 5))
+        for ax, img in zip(axes, images):
+            ax.imshow(img)
+            ax.axis('off') 
+        
+        plt.show()
+    
+    if save :
+        path_to_file = os.path.join('./results/LayerCAM', dataset+'_'+freeze+'_#'+str(layer_num)+'_Heatmap.png')
+        save_image(heatmap, path_to_file)
+        path_to_file = os.path.join('./results/LayerCAM', dataset+'_'+freeze+'_#'+str(layer_num)+'_On_Image.png')
+        save_image(heatmap_on_image, path_to_file)
+        path_to_file = os.path.join('./results/LayerCAM', dataset+'_'+freeze+'_#'+str(layer_num)+'_Grayscale.png')
+        save_image(activation_map, path_to_file)
