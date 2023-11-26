@@ -116,7 +116,7 @@ def CUB200():
     trainloader = DataLoader(trainset, batch_size, shuffle=True, drop_last=True, num_workers=2)
     validloader = DataLoader(validset, batch_size, shuffle=True, drop_last=True, num_workers=2)
     
-    test_dataset = Cub2011(root='./data/cub-200-2011')
+    test_dataset = Cub2011(root='./data/cub-200-2011', transform=transform, download=True, train=False)
     testloader = DataLoader(test_dataset, batch_size, shuffle=False, drop_last=True, num_workers=2)
     
     return trainloader, validloader, testloader, n_class
