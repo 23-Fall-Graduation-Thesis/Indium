@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
-from torchvision import utils
 import numpy as np
 import torch
 import os
+from utils.visualize_grad import VanillaBackprop
 from utils.get_data import *
 from utils.util_functions import *
+
 
 def visualize_tensor(tensor, isnomalized=True):
     numpy = tensor.numpy().transpose(1, 2, 0)
@@ -99,7 +100,6 @@ def visualize_class_activation_images(org_img, activation_map, dataset, freeze, 
         for ax, img in zip(axes, images):
             ax.imshow(img)
             ax.axis('off') 
-        
         plt.show()
     
     if save :
@@ -109,3 +109,13 @@ def visualize_class_activation_images(org_img, activation_map, dataset, freeze, 
         save_image(heatmap_on_image, path_to_file)
         path_to_file = os.path.join('./results/LayerCAM', dataset+'_'+freeze+'_#'+str(layer_num)+'_Grayscale.png')
         save_image(activation_map, path_to_file)
+
+
+def visualize_gradXimage(prep_img, target_class,  model, dataset, freeze, show=True, save=False):
+    VBP = VanillaBackprop(model)
+    vanilla_grads = VBP.generate_gradients(prep_img, target_class)
+
+    grad_times_image = vanilla_grads * prep_img.detach().numpy()[0]
+    grayscale_vanilla_grads = convert_to_grayscale(grad_times_image)
+    save_gradient_images(grayscale_vanilla_grads, dataset, freeze)
+    print('Grad times image completed.')

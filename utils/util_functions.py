@@ -1,9 +1,13 @@
+import os
 import re
 import numpy as np
+import copy
+import torch
 from PIL import Image
 import matplotlib.cm as mpl_color_map
 from matplotlib.colors import ListedColormap
 from torch.autograd import Variable
+import matplotlib.pyplot as plt
 
 # for prototype
 def name_parser(path):
@@ -45,6 +49,15 @@ def tensor_to_img(tensor, isnomalized=True):
     return image
 
 
+def get_info(data):
+    img_tensor = data[0]
+    target_class = data[1]
+    origin_img = tensor_to_img(img_tensor)
+    prep_img = preprocess_image(origin_img)
+    
+    return origin_img, prep_img, target_class
+
+
 def format_np_output(np_arr):
     """
         This is a (kind of) bandaid fix to streamline saving procedure.
@@ -72,6 +85,24 @@ def format_np_output(np_arr):
     return np_arr
 
 
+def convert_to_grayscale(im_as_arr):
+    """
+        Converts 3d image to grayscale
+
+    Args:
+        im_as_arr (numpy arr): RGB image with shape (D,W,H)
+
+    returns:
+        grayscale_im (numpy_arr): Grayscale image with shape (1,W,D)
+    """
+    grayscale_im = np.sum(np.abs(im_as_arr), axis=0)
+    im_max = np.percentile(grayscale_im, 99)
+    im_min = np.min(grayscale_im)
+    grayscale_im = (np.clip((grayscale_im - im_min) / (im_max - im_min), 0, 1))
+    grayscale_im = np.expand_dims(grayscale_im, axis=0)
+    return grayscale_im
+
+
 def save_image(im, path):
     """
         Saves a numpy matrix or PIL image as an image
@@ -84,13 +115,31 @@ def save_image(im, path):
         im = Image.fromarray(im)
     im.save(path)
 
-def apply_colormap_on_image(org_im, activation, colormap_name):
+
+def save_gradient_images(gradient, dataset, freeze, show=True, save=False):
+    """objective: Exports the original gradient image
+    - input: 
+        - gradient (np arr): Numpy array of the gradient with shape (3, 224, 224)
+        - for file_name... (dataset, freeze) (str): File name to be exported
     """
-        Apply heatmap on image
-    Args:
-        org_img (PIL img): Original image
-        activation_map (numpy arr): Activation map (grayscale) 0-255
-        colormap_name (str): Name of the colormap
+    if not os.path.exists('./results/GradXImage/'):
+        os.makedirs('./results/GradXImage/')
+    # Normalize
+    gradient = gradient - gradient.min()
+    if show:
+        plt_gradient = np.squeeze(gradient)
+        plt.imshow(plt_gradient, cmap='gray')
+        plt.axis('off')
+        plt.show()
+    if save : 
+        path_to_file = os.path.join('./results/GradXImage/', dataset+'_'+freeze+'_Vanilla_grad.png')
+        save_image(gradient, path_to_file)
+
+
+
+def apply_colormap_on_image(org_im, activation, colormap_name):
+    """objective: Apply heatmap on image
+    - input: org_img (PIL img): Original image; activation_map (numpy arr): Activation map (grayscale) 0-255; colormap_name (str): Name of the colormap
     """
     # Get colormap
     color_map = mpl_color_map.get_cmap(colormap_name)
@@ -109,10 +158,7 @@ def apply_colormap_on_image(org_im, activation, colormap_name):
 
 
 def apply_heatmap(R, sx, sy):
-    """
-        Heatmap code stolen from https://git.tu-berlin.de/gmontavon/lrp-tutorial
-
-        This is (so far) only used for LRP
+    """objective: Heatmap code stolen from https://git.tu-berlin.de/gmontavon/lrp-tutorial
     """
     b = 10*((np.abs(R)**3.0).mean()**(1.0/3))
     my_cmap = plt.cm.seismic(np.arange(plt.cm.seismic.N))
@@ -124,16 +170,12 @@ def apply_heatmap(R, sx, sy):
     heatmap = plt.imshow(R, cmap=my_cmap, vmin=-b, vmax=b, interpolation='nearest')
     return heatmap
     # plt.show()
-    
-def preprocess_image(pil_im, resize_im=True):
-    """
-        Processes image for CNNs
 
-    Args:
-        PIL_img (PIL_img): PIL Image or numpy array to process
-        resize_im (bool): Resize to 224 or not
-    returns:
-        im_as_var (torch variable): Variable that contains processed float tensor
+
+def preprocess_image(pil_im, resize_im=True):
+    """objective: Processes image for CNNs
+    - input: PIL_img (PIL_img): PIL Image or numpy array to process; resize_im (bool): Resize to 224 or not
+    - output: im_as_var (torch variable): Variable that contains processed float tensor
     """
     # Mean and std list for channels (Imagenet)
     mean = [0.485, 0.456, 0.406]
@@ -157,10 +199,8 @@ def preprocess_image(pil_im, resize_im=True):
         im_as_arr[channel] /= 255
         im_as_arr[channel] -= mean[channel]
         im_as_arr[channel] /= std[channel]
-    # Convert to float tensor
     im_as_ten = torch.from_numpy(im_as_arr).float()
     # Add one more channel to the beginning. Tensor shape = 1,3,224,224
     im_as_ten.unsqueeze_(0)
-    # Convert to Pytorch variable
     im_as_var = Variable(im_as_ten, requires_grad=True)
     return im_as_var
