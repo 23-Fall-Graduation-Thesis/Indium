@@ -33,11 +33,13 @@ def plot_filters(model_info, tensor, layer_name, conf, save=False, show=True, nc
             save_plot_result(fig, "VisFilter", '#layer_'+alias+"_#channel_"+str(c), conf)
         if show :
             plt.show()
+        else:
+            plt.close()
 
 
 def visualize_filters(model_info, model, layer_name, conf=None, save=False, show=True, ncols=32, nchannel=5, showAll=False):
     weights = get_weights(model, layer_name)
-    print(weights.shape)
+    # print(weights.shape)
     n, c, w, h = weights.shape
     if not showAll:
         c = min(c, nchannel)
@@ -47,7 +49,7 @@ def visualize_filters(model_info, model, layer_name, conf=None, save=False, show
 
 def visualize_feature_map(activation, model, input, layer_name, idx, conf=None, save=False, show=True, ncols=32):
     act = get_feature_map(activation, model, input, layer_name, idx)
-    print(act.shape)
+    # print(act.shape)
     nrows = max(act.size(0) // ncols, 1) 
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols, nrows))
     for i in range(act.size(0)):
@@ -60,6 +62,8 @@ def visualize_feature_map(activation, model, input, layer_name, idx, conf=None, 
         save_plot_result(fig, "VisActivation", '#layer_'+layer_name, conf)
     if show :
         plt.show()
+    else:
+        plt.close()
 
 
 def visualize_weight_distribution(model, conf=None, save=False, show=True, violin_sample=1000):
@@ -78,6 +82,8 @@ def visualize_weight_distribution(model, conf=None, save=False, show=True, violi
         save_plot_result(fig, "VisWeightDist", 'statistics', conf)
     if show :
         plt.show()
+    else:
+        plt.close()
 
 
     plt.figure(figsize=(7, 4))
@@ -93,6 +99,8 @@ def visualize_weight_distribution(model, conf=None, save=False, show=True, violi
         save_plot_result(fig, "VisWeightDist", 'violinplot', conf)
     if show :
         plt.show()
+    else:
+        plt.close() 
 
 
 
@@ -120,6 +128,8 @@ def visualize_class_activation_images(org_img, activation_map, conf, layer_num, 
             ax.imshow(img)
             ax.axis('off') 
         plt.show()
+    else :
+        plt.close() 
 
 
 def visualize_gradXimage(prep_img, target_class, model, conf, show=True, save=False):
@@ -129,7 +139,6 @@ def visualize_gradXimage(prep_img, target_class, model, conf, show=True, save=Fa
     grad_times_image = vanilla_grads * prep_img.detach().numpy()[0]
     grayscale_vanilla_grads = convert_to_grayscale(grad_times_image)
     save_gradient_images(grayscale_vanilla_grads, conf, show, save)
-    print('Grad times image completed.')
 
 
 def visualize_feature_distribution(embedding, labels, preds, conf, layer_name, show=True, save=False):
@@ -147,6 +156,8 @@ def visualize_feature_distribution(embedding, labels, preds, conf, layer_name, s
         save_plot_result(fig, "FeatureDist", '#layer_'+layer_name, conf)
     if show :
         plt.show()
+    else :
+        plt.close() 
 
 
 def plot_comparison_each_dataset_only_two(df_dataset, show=True, save=False):
@@ -186,6 +197,8 @@ def plot_comparison_each_dataset_only_two(df_dataset, show=True, save=False):
             save_plot_result(fig, "Comparison", "2-layer Finetuning profiles on "+str(dataset))
         if show :    
             plt.show()
+        else :
+            plt.close() 
 
 
 
@@ -225,6 +238,8 @@ def plot_comparison_each_dataset_only_one(df_dataset, show=True, save=False):
         save_plot_result(fig, "Comparison", "Finetuning profiles for different select Only one layer and datasets")
     if show :    
         plt.show()
+    else :
+        plt.close() 
 
 
 def plot_comparison_each_dataset(df_dataset, show=True, save=False):
@@ -260,3 +275,5 @@ def plot_comparison_each_dataset(df_dataset, show=True, save=False):
         save_plot_result(fig, "Comparison", "Finetuning profiles for different select layer and datasets")
     if show :    
         plt.show()
+    else :
+        plt.close() 

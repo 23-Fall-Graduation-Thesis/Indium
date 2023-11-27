@@ -176,6 +176,7 @@ def apply_heatmap(R, sx, sy):
     plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
     plt.axis('off')
     heatmap = plt.imshow(R, cmap=my_cmap, vmin=-b, vmax=b, interpolation='nearest')
+    plt.close() 
     return heatmap
     # plt.show()
 
@@ -244,4 +245,5 @@ def save_plot_result(fig, vis_method, alias, conf=None, isimage=False):
         save_image(fig, file_path)
     
     print(f"Plot saved to {file_path}")
+    plt.close(fig)
 
