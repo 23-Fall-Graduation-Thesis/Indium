@@ -141,15 +141,21 @@ def visualize_gradXimage(prep_img, target_class, model, conf, show=True, save=Fa
     save_gradient_images(grayscale_vanilla_grads, conf, show, save)
 
 
-def visualize_feature_distribution(embedding, labels, preds, conf, layer_name, show=True, save=False):
+def visualize_feature_distribution(embedding, labels, preds, conf, layer_name, num_class=30, show=True, save=False):
     df = pd.DataFrame(embedding, columns=['x', 'y'])
     df['labels'] = labels
     df['preds'] = preds
+    
+    df['labels'] = pd.to_numeric(df['labels'], errors='coerce')
+    if (10 < num_class) and (conf['dataset'] == "cifar10" or conf['dataset'] == "svhn"):
+        num_class = 10
 
+    filtered_df = df[df['labels'] < num_class]
+    
     sns.set()
     sns.set_theme(style="white")
     plt.figure(figsize=(10, 10))
-    sns.scatterplot(data=df, x='x', y='y', hue='preds', style='labels', palette='bright')
+    sns.scatterplot(data=filtered_df, x='x', y='y', hue='preds', style='labels', palette='bright', legend=False)
     plt.title("Feature Distribution")
     if save:
         fig = plt.gcf()

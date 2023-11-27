@@ -56,6 +56,8 @@ def get_feature_from_dataset(MODEL, batch_size, testloader, layer_name, idx):
     features = None
     labels = None
     preds = None
+    if batch_size > len(testloader.dataset) :
+        batch_size = len(testloader.dataset)
     shuffle_testloader = DataLoader(testloader.dataset, batch_size=batch_size, shuffle=True)
     
     with torch.no_grad():
