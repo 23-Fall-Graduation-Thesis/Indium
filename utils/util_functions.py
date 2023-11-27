@@ -9,6 +9,11 @@ import matplotlib.cm as mpl_color_map
 from matplotlib.colors import ListedColormap
 from torch.autograd import Variable
 import matplotlib.pyplot as plt
+import warnings
+from numba import NumbaDeprecationWarning
+
+warnings.filterwarnings('ignore', category=NumbaDeprecationWarning)
+
 
 # for prototype
 def name_parser(path):
@@ -17,14 +22,21 @@ def name_parser(path):
     ouput: mode <- str, model <- str, dataset <- str, freeze <- str"""
     parts = path.split("/")
     
-    mode = parts[3]
-    model = parts[4]
+    mode_ins = parts[3]
+    model_ins = parts[4]
     sub_parts = parts[5].split("_")
-    dataset = sub_parts[0]
-    freeze = sub_parts[3].split(".")[0]
-    freeze = ''.join(re.findall(r'\d+', freeze))
-    freeze = freeze[:-3]
-    return mode, model, dataset, freeze
+    dataset_ins = sub_parts[0]
+    freeze_ins = sub_parts[3].split(".")[0]
+    freeze_ins = ''.join(re.findall(r'\d+', freeze_ins))
+    freeze_ins = freeze_ins[:-3]
+    
+    conf = dict(
+        mode=mode_ins, 
+        model=model_ins, 
+        dataset=dataset_ins, 
+        freeze=freeze_ins
+    )
+    return conf
 
 
 def get_alias(layer_name, model_info, model="alexnet"):
@@ -117,25 +129,20 @@ def save_image(im, path):
     im.save(path)
 
 
-def save_gradient_images(gradient, dataset, freeze, show=True, save=False):
+def save_gradient_images(gradient, conf, show=True, save=False):
     """objective: Exports the original gradient image
     - input: 
         - gradient (np arr): Numpy array of the gradient with shape (3, 224, 224)
         - for file_name... (dataset, freeze) (str): File name to be exported
     """
-    if not os.path.exists('./results/GradXImage/'):
-        os.makedirs('./results/GradXImage/')
-    # Normalize
     gradient = gradient - gradient.min()
+    if save : 
+        save_plot_result(gradient, "GradXImage", "vanila_grad", conf, isimage=True)
     if show:
         plt_gradient = np.squeeze(gradient)
         plt.imshow(plt_gradient, cmap='gray')
         plt.axis('off')
         plt.show()
-    if save : 
-        path_to_file = os.path.join('./results/GradXImage/', dataset+'_'+freeze+'_Vanilla_grad.png')
-        save_image(gradient, path_to_file)
-
 
 
 def apply_colormap_on_image(org_im, activation, colormap_name):
@@ -212,3 +219,29 @@ def get_umap_embedding(features, n_components=2, n_neighbors=10, min_dist=0.5, m
     embedding = reducer.fit_transform(features)
     
     return embedding
+
+
+def save_plot_result(fig, vis_method, alias, conf=None, isimage=False):
+    # vis_method: 
+    directory_path = "./results/figure/"
+    if conf is not None:
+        directory_path = os.path.join(directory_path, conf['mode'], conf['model'], conf['dataset'], vis_method)
+    else :
+        directory_path = os.path.join(directory_path, vis_method)
+        
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+    
+    if conf is not None :
+        file_name = f"{alias}_{conf['freeze']}.png"
+    else :
+        file_name = f"{alias}.png"
+    
+    file_path = os.path.join(directory_path, file_name)
+    if not isimage:
+        fig.savefig(file_path)
+    else :
+        save_image(fig, file_path)
+    
+    print(f"Plot saved to {file_path}")
+

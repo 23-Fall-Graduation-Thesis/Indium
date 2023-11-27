@@ -16,7 +16,7 @@ def visualize_tensor(tensor, isnomalized=True):
     plt.show()
 
 
-def plot_filters(model_info, tensor, layer_name, ncols=32 , nchannel=5):
+def plot_filters(model_info, tensor, layer_name, conf, save=False, show=True, ncols=32 , nchannel=5):
     n, _, _, _ = tensor.shape
     nrows = n // ncols + (1 if n % ncols else 0)
 
@@ -29,20 +29,23 @@ def plot_filters(model_info, tensor, layer_name, ncols=32 , nchannel=5):
             ax.axis('off')
         alias = get_alias(layer_name, model_info)
         plt.suptitle('Layer: '+alias+" (# channel: "+str(c)+")")
-        plt.show()
+        if save :
+            save_plot_result(fig, "VisFilter", '#layer_'+alias+"_#channel_"+str(c), conf)
+        if show :
+            plt.show()
 
 
-def visualize_filters(model_info, model, layer_name, ncols=32, nchannel=5, showAll=False):
+def visualize_filters(model_info, model, layer_name, conf=None, save=False, show=True, ncols=32, nchannel=5, showAll=False):
     weights = get_weights(model, layer_name)
     print(weights.shape)
     n, c, w, h = weights.shape
     if not showAll:
         c = min(c, nchannel)
-    plot_filters(model_info, weights, layer_name, ncols, c)
+    plot_filters(model_info, weights, layer_name, conf, save, show, ncols, c)
 
 
 
-def visualize_feature_map(activation, model, input, layer_name, idx, ncols=32):
+def visualize_feature_map(activation, model, input, layer_name, idx, conf=None, save=False, show=True, ncols=32):
     act = get_feature_map(activation, model, input, layer_name, idx)
     print(act.shape)
     nrows = max(act.size(0) // ncols, 1) 
@@ -53,11 +56,14 @@ def visualize_feature_map(activation, model, input, layer_name, idx, ncols=32):
         ax.imshow(kernel, cmap='viridis')
         ax.axis('off')
     plt.suptitle('Layer: '+layer_name)
-    plt.show()
+    if save :
+        save_plot_result(fig, "VisActivation", '#layer_'+layer_name, conf)
+    if show :
+        plt.show()
 
 
-def visualize_weight_distribution(model, violin_sample=1000):
-    sns.set()
+def visualize_weight_distribution(model, conf=None, save=False, show=True, violin_sample=1000):
+    
     means, variances, weight_df = get_numerical_weight(model)
     
     plt.figure(figsize=(7, 4))
@@ -67,7 +73,11 @@ def visualize_weight_distribution(model, violin_sample=1000):
     plt.ylabel('value')
     plt.title('Weights Statistics')
     plt.legend()
-    plt.show()
+    if save :
+        fig = plt.gcf()
+        save_plot_result(fig, "VisWeightDist", 'statistics', conf)
+    if show :
+        plt.show()
 
 
     plt.figure(figsize=(7, 4))
@@ -75,11 +85,18 @@ def visualize_weight_distribution(model, violin_sample=1000):
     plt.xlabel('conv #')
     plt.ylabel('weights')
     plt.xticks([1, 2, 3, 4, 5], ['1', '2', '3', '4', '5'])
+    sns.set()
+    sns.set_theme(style="darkgrid")
     sns.violinplot(x='Layer', y='Weights', data=sampled_df)
-    plt.show()
+    if save :
+        fig = plt.gcf()
+        save_plot_result(fig, "VisWeightDist", 'violinplot', conf)
+    if show :
+        plt.show()
 
 
-def visualize_class_activation_images(org_img, activation_map, dataset, freeze, layer_num, show=True, save=False):
+
+def visualize_class_activation_images(org_img, activation_map, conf, layer_num, show=True, save=False):
     """
         Saves cam activation map and activation map on the original image
 
@@ -87,12 +104,14 @@ def visualize_class_activation_images(org_img, activation_map, dataset, freeze, 
         org_img (PIL img): Original image
         activation_map (numpy arr): Activation map (grayscale) 0-255
         file_name (str): File name of the exported image
-    """
-    if not os.path.exists('./results/LayerCAM'):
-        os.makedirs('./results/LayerCAM')
-        
+    """ 
     # Grayscale activation map
     heatmap, heatmap_on_image = apply_colormap_on_image(org_img, activation_map, 'hsv')
+        
+    if save :
+        save_plot_result(heatmap, "LayerCAM", 'Heatmap_#layer_'+str(layer_num), conf, isimage=True)
+        save_plot_result(heatmap_on_image, "LayerCAM", 'Grad_On_Image_#layer_'+str(layer_num), conf, isimage=True)
+        save_plot_result(activation_map, "LayerCAM", 'Grayscale_#layer_'+str(layer_num), conf, isimage=True)
     
     if show:
         images = [heatmap, heatmap_on_image, activation_map]
@@ -101,27 +120,19 @@ def visualize_class_activation_images(org_img, activation_map, dataset, freeze, 
             ax.imshow(img)
             ax.axis('off') 
         plt.show()
-    
-    if save :
-        path_to_file = os.path.join('./results/LayerCAM', dataset+'_'+freeze+'_#'+str(layer_num)+'_Heatmap.png')
-        save_image(heatmap, path_to_file)
-        path_to_file = os.path.join('./results/LayerCAM', dataset+'_'+freeze+'_#'+str(layer_num)+'_On_Image.png')
-        save_image(heatmap_on_image, path_to_file)
-        path_to_file = os.path.join('./results/LayerCAM', dataset+'_'+freeze+'_#'+str(layer_num)+'_Grayscale.png')
-        save_image(activation_map, path_to_file)
 
 
-def visualize_gradXimage(prep_img, target_class,  model, dataset, freeze, show=True, save=False):
+def visualize_gradXimage(prep_img, target_class, model, conf, show=True, save=False):
     VBP = VanillaBackprop(model)
     vanilla_grads = VBP.generate_gradients(prep_img, target_class)
 
     grad_times_image = vanilla_grads * prep_img.detach().numpy()[0]
     grayscale_vanilla_grads = convert_to_grayscale(grad_times_image)
-    save_gradient_images(grayscale_vanilla_grads, dataset, freeze)
+    save_gradient_images(grayscale_vanilla_grads, conf, show, save)
     print('Grad times image completed.')
-    
 
-def visualize_feature_distribution(embedding, labels, preds):
+
+def visualize_feature_distribution(embedding, labels, preds, conf, layer_name, show=True, save=False):
     df = pd.DataFrame(embedding, columns=['x', 'y'])
     df['labels'] = labels
     df['preds'] = preds
@@ -131,10 +142,14 @@ def visualize_feature_distribution(embedding, labels, preds):
     plt.figure(figsize=(10, 10))
     sns.scatterplot(data=df, x='x', y='y', hue='preds', style='labels', palette='bright')
     plt.title("Feature Distribution")
-    plt.show()
+    if save:
+        fig = plt.gcf()
+        save_plot_result(fig, "FeatureDist", '#layer_'+layer_name, conf)
+    if show :
+        plt.show()
 
 
-def plot_comparison_each_dataset_only_two(df_dataset):
+def plot_comparison_each_dataset_only_two(df_dataset, show=True, save=False):
     datasets = ['cifar10', 'cifar100', 'svhn', 'cub']
     keys = ['best_train_acc', 'best_train_loss', 'best_val_acc', 'best_val_loss']
     onlytwo = ['11000', '10100', '10010', '10001', '01100', '01010', '01001', '00110', '00101', '00011']
@@ -166,12 +181,15 @@ def plot_comparison_each_dataset_only_two(df_dataset):
             sns.set_theme(style="white")
             sns.heatmap(ax=axes[i], data=df_heatmap, annot=True, fmt=".3f", cmap='viridis', annot_kws={"size": 10})
             axes[i].set_title("2-layer fintuning "+str(key)+" on "+str(dataset))
-                
-        plt.tight_layout()
-        plt.show()
+        
+        if save:
+            save_plot_result(fig, "Comparison", "2-layer Finetuning profiles on "+str(dataset))
+        if show :    
+            plt.show()
 
 
-def plot_comparison_each_dataset_only_one(df_dataset):
+
+def plot_comparison_each_dataset_only_one(df_dataset, show=True, save=False):
     datasets = ['cifar10', 'cifar100', 'svhn', 'cub']
     keys = ['best_train_acc', 'best_train_loss', 'best_val_acc', 'best_val_loss']
     onleyone = ['00001', '00010', '00100', '01000', '10000']
@@ -202,11 +220,14 @@ def plot_comparison_each_dataset_only_one(df_dataset):
             axes[i].set_title("Comparison of "+str(key))
             axes[i].tick_params(axis='x', rotation=45)
             axes[i].legend()
-            
     plt.tight_layout()
-    plt.show()
-    
-def plot_comparison_each_dataset(df_dataset):
+    if save:
+        save_plot_result(fig, "Comparison", "Finetuning profiles for different select Only one layer and datasets")
+    if show :    
+        plt.show()
+
+
+def plot_comparison_each_dataset(df_dataset, show=True, save=False):
     datasets = ['cifar10', 'cifar100', 'svhn', 'cub']
     keys = ['best_train_acc', 'best_train_loss', 'best_val_acc', 'best_val_loss']
     
@@ -234,6 +255,8 @@ def plot_comparison_each_dataset(df_dataset):
             axes[i].set_title("Comparison of "+str(key))
             axes[i].tick_params(axis='x', rotation=45)
             axes[i].legend()
-            
     plt.tight_layout()
-    plt.show()
+    if save:
+        save_plot_result(fig, "Comparison", "Finetuning profiles for different select layer and datasets")
+    if show :    
+        plt.show()

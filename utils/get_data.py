@@ -73,3 +73,29 @@ def get_feature_from_dataset(MODEL, batch_size, testloader, layer_name, idx):
                 break
     
     return features, labels, preds
+
+
+def get_performance_df(BEST_VALUES):
+    grouped_data = {}
+    for key, value in BEST_VALUES.items():
+        group_key, sub_key = key.split('-')
+        if group_key not in grouped_data:
+            grouped_data[group_key] = {}
+        grouped_data[group_key][sub_key] = value
+
+    df_dataset = {}
+    for group_key, values in grouped_data.items():
+        df_dataset[group_key] = pd.DataFrame(values)
+
+    grouped_data = {}
+    for key, value in BEST_VALUES.items():
+        sub_key, group_key = key.split('-')
+        if group_key not in grouped_data:
+            grouped_data[group_key] = {}
+        grouped_data[group_key][sub_key] = value
+    
+    df_freezing = {}
+    for group_key, values in grouped_data.items():
+        df_freezing[group_key] = pd.DataFrame(values)
+
+    return df_dataset, df_freezing
