@@ -15,7 +15,7 @@ def get_weights(model, layer_name):
     return weights
 
 
-def get_feature_map(model, input, layer_name, idx):
+def get_feature_map(activation, model, input, layer_name, idx):
     def get_activation(name):
         def hook(model, input, output):
             activation[name] = output.detach()

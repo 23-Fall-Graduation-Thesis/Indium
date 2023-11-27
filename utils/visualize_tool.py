@@ -16,7 +16,7 @@ def visualize_tensor(tensor, isnomalized=True):
     plt.show()
 
 
-def plot_filters(tensor, layer_name, ncols=32 , nchannel=5):
+def plot_filters(model_info, tensor, layer_name, ncols=32 , nchannel=5):
     n, _, _, _ = tensor.shape
     nrows = n // ncols + (1 if n % ncols else 0)
 
@@ -32,18 +32,18 @@ def plot_filters(tensor, layer_name, ncols=32 , nchannel=5):
         plt.show()
 
 
-def visualize_filters(model, layer_name, ncols=32, nchannel=5, showAll=False):
+def visualize_filters(model_info, model, layer_name, ncols=32, nchannel=5, showAll=False):
     weights = get_weights(model, layer_name)
     print(weights.shape)
     n, c, w, h = weights.shape
     if not showAll:
         c = min(c, nchannel)
-    plot_filters(weights, layer_name, ncols, c)
+    plot_filters(model_info, weights, layer_name, ncols, c)
 
 
 
-def visualize_feature_map(model, input, layer_name, idx, ncols=32):
-    act = get_feature_map(model, input, layer_name, idx)
+def visualize_feature_map(activation, model, input, layer_name, idx, ncols=32):
+    act = get_feature_map(activation, model, input, layer_name, idx)
     print(act.shape)
     nrows = max(act.size(0) // ncols, 1) 
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols, nrows))
