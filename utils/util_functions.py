@@ -4,6 +4,7 @@ import numpy as np
 import copy
 import torch
 from PIL import Image
+import umap.umap_ as umap
 import matplotlib.cm as mpl_color_map
 from matplotlib.colors import ListedColormap
 from torch.autograd import Variable
@@ -204,3 +205,10 @@ def preprocess_image(pil_im, resize_im=True):
     im_as_ten.unsqueeze_(0)
     im_as_var = Variable(im_as_ten, requires_grad=True)
     return im_as_var
+
+
+def get_umap_embedding(features, n_components=2, n_neighbors=10, min_dist=0.5, metric="cosine", random_state=50):
+    reducer = umap.UMAP(n_components=n_components, n_neighbors=n_neighbors, min_dist=min_dist, metric=metric, random_state=random_state)
+    embedding = reducer.fit_transform(features)
+    
+    return embedding

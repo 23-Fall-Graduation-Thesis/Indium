@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import pandas as pd
+from torch.utils.data import DataLoader
 
 def get_weights(model, layer_name):
     flag = False
@@ -48,3 +49,27 @@ def get_numerical_weight(model):
     weight_df = pd.DataFrame({'Layer': layer_index, 'Weights': weights_data})
 
     return means, variances, weight_df
+
+
+def get_feature_from_dataset(MODEL, batch_size, testloader, layer_name, idx):
+    
+    features = None
+    labels = None
+    preds = None
+    shuffle_testloader = DataLoader(testloader.dataset, batch_size=batch_size, shuffle=True)
+    
+    with torch.no_grad():
+        MODEL.eval()
+        count = 0
+        for data, target in shuffle_testloader:
+            count += 1
+            activation = {}
+            feature = get_feature_map(activation, MODEL, data, layer_name, idx)
+            features = feature.view(batch_size, -1)
+            labels = target
+            output = MODEL(data)
+            preds = output.argmax(dim=1, keepdim=True).squeeze()
+            if count != 0 :
+                break
+    
+    return features, labels, preds

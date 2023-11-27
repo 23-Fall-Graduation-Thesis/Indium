@@ -119,3 +119,121 @@ def visualize_gradXimage(prep_img, target_class,  model, dataset, freeze, show=T
     grayscale_vanilla_grads = convert_to_grayscale(grad_times_image)
     save_gradient_images(grayscale_vanilla_grads, dataset, freeze)
     print('Grad times image completed.')
+    
+
+def visualize_feature_distribution(embedding, labels, preds):
+    df = pd.DataFrame(embedding, columns=['x', 'y'])
+    df['labels'] = labels
+    df['preds'] = preds
+
+    sns.set()
+    sns.set_theme(style="white")
+    plt.figure(figsize=(10, 10))
+    sns.scatterplot(data=df, x='x', y='y', hue='preds', style='labels', palette='bright')
+    plt.title("Feature Distribution")
+    plt.show()
+
+
+def plot_comparison_each_dataset_only_two(df_dataset):
+    datasets = ['cifar10', 'cifar100', 'svhn', 'cub']
+    keys = ['best_train_acc', 'best_train_loss', 'best_val_acc', 'best_val_loss']
+    onlytwo = ['11000', '10100', '10010', '10001', '01100', '01010', '01001', '00110', '00101', '00011']
+    
+    for dataset in datasets:
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
+        axes = axes.flatten()
+        group_df = df_dataset[dataset]
+        for i, key in enumerate(keys) :
+            row_values = group_df.loc[key]
+            if key in ['best_train_acc', 'best_val_acc'] : accloss = 'Accuracy'
+            else : accloss = 'Loss'
+            
+            filtered_values = row_values[row_values.index.isin(onlytwo)]
+            
+            heatmap_data = np.zeros((5, 5))
+            # print(filtered_values.index, filtered_values.values)
+            for idx, value in zip(filtered_values.index, filtered_values.values):
+                row_idx = idx.index('1') 
+                col_idx = idx.index('1', row_idx + 1)
+                heatmap_data[row_idx, col_idx] = value
+                heatmap_data[col_idx, row_idx] = value
+            
+            df_heatmap = pd.DataFrame(heatmap_data, index=[f"B{i+1}" for i in range(5)], columns=[f"B{i+1}" for i in range(5)])
+
+            df_heatmap.fillna(0, inplace=True)
+            
+            sns.set()
+            sns.set_theme(style="white")
+            sns.heatmap(ax=axes[i], data=df_heatmap, annot=True, fmt=".3f", cmap='viridis', annot_kws={"size": 10})
+            axes[i].set_title("2-layer fintuning "+str(key)+" on "+str(dataset))
+                
+        plt.tight_layout()
+        plt.show()
+
+
+def plot_comparison_each_dataset_only_one(df_dataset):
+    datasets = ['cifar10', 'cifar100', 'svhn', 'cub']
+    keys = ['best_train_acc', 'best_train_loss', 'best_val_acc', 'best_val_loss']
+    onleyone = ['00001', '00010', '00100', '01000', '10000']
+    
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(20, 12)) 
+    axes = axes.flatten()
+
+    for dataset in datasets:
+        group_df = df_dataset[dataset]
+        for i, key in enumerate(keys) :
+            row_values = group_df.loc[key]
+            if key in ['best_train_acc', 'best_val_acc'] : accloss = 'Accuracy'
+            else : accloss = 'Loss'
+            
+            filtered_values = row_values[row_values.index.isin(onleyone)]
+            
+            long_form = pd.DataFrame({
+                'Freezing': filtered_values.index,
+                accloss : filtered_values.values
+            })
+            
+            sns.set()
+            sns.set_theme(style="darkgrid")
+            sns.set_palette("muted")
+            #sns.set_theme(palette="viridis")
+            sns.lineplot(ax=axes[i], data=long_form, x='Freezing', y=accloss, label=dataset, marker='o', dashes=True)
+            
+            axes[i].set_title("Comparison of "+str(key))
+            axes[i].tick_params(axis='x', rotation=45)
+            axes[i].legend()
+            
+    plt.tight_layout()
+    plt.show()
+    
+def plot_comparison_each_dataset(df_dataset):
+    datasets = ['cifar10', 'cifar100', 'svhn', 'cub']
+    keys = ['best_train_acc', 'best_train_loss', 'best_val_acc', 'best_val_loss']
+    
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(20, 12)) 
+    axes = axes.flatten()
+
+    for dataset in datasets:
+        group_df = df_dataset[dataset]
+        for i, key in enumerate(keys) :
+            row_values = group_df.loc[key]
+            if key in ['best_train_acc', 'best_val_acc'] : accloss = 'Accuracy'
+            else : accloss = 'Loss'
+            
+            long_form = pd.DataFrame({
+                'Freezing': row_values.index,
+                accloss : row_values.values
+            })
+            
+            sns.set()
+            sns.set_theme(style="darkgrid")
+            sns.set_palette("muted")
+            #sns.set_theme(palette="viridis")
+            sns.lineplot(ax=axes[i], data=long_form, x='Freezing', y=accloss, label=dataset, marker='o', dashes=True)
+            
+            axes[i].set_title("Comparison of "+str(key))
+            axes[i].tick_params(axis='x', rotation=45)
+            axes[i].legend()
+            
+    plt.tight_layout()
+    plt.show()
