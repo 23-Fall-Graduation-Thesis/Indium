@@ -1,4 +1,6 @@
 import torch, os
+from pyprnt import prnt
+from datetime import datetime
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
@@ -49,7 +51,7 @@ def train(model, criterion, optimizer, trainloader, device):
     train_loss = 0
     loss = 0
     train_acc = 0
-    for data, target in trainloader:
+    for data, target in trainloader :
         optimizer.zero_grad()
         data, target = data.to(device), target.to(device)
         output = model(data)
@@ -64,6 +66,7 @@ def train(model, criterion, optimizer, trainloader, device):
     train_acc = train_acc / len(trainloader.dataset) * 100
     
     return train_loss, train_acc
+
 
 def validation(model, criterion, validloader, device):
     model.eval()
@@ -82,6 +85,7 @@ def validation(model, criterion, validloader, device):
     valid_acc = valid_acc / len(validloader.dataset) * 100
     
     return valid_loss, valid_acc
+    
     
 def test(model, criterion, testloader, checkpt, device):
     model.load_state_dict(torch.load(checkpt))
@@ -102,6 +106,7 @@ def test(model, criterion, testloader, checkpt, device):
     
     return test_loss, test_acc
 
+
 if __name__ == '__main__':
     # arguments parsing
     args = arg_parse(argparse.ArgumentParser())
@@ -120,6 +125,9 @@ if __name__ == '__main__':
     
     # experiment setting values
     setting = "epoch"+str(conf['epoch'])+"_lr"+str(conf['lr'])
+    
+    print()
+    prnt(conf)
     
     if conf['pretrain'] == True:
         model = select_model(conf['model']).to(conf['device'])
@@ -157,17 +165,19 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss().to(conf['device'])
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=conf['lr'])
     
-    print('\nStart training')
+    start_time = datetime.now().strftime('%m-%d_%H%M%S')
+    print('\nStart training at', start_time)
+    
     best = 99999999
     best_epoch = 0
     bad_count = 0
-    
-    for epoch in tqdm(range(conf['epoch']), desc="train_val"):
+    for epoch in range(conf['epoch']):
         train_loss, train_acc = train(model, criterion, optimizer, trainloader, conf['device'])
         valid_loss, valid_acc = validation(model, criterion, validloader, conf['device'])
-        # if (epoch + 1) % 5 == 0:
-        #     print('Epoch:{:04d}'.format(epoch+1), 'train loss:{:.3f}'.format(train_loss), 'acc:{:.2f}'.format(train_acc))
-        #     print('validation loss:{:.3f}'.format(valid_loss), 'acc:{:.2f}'.format(valid_acc))
+        if (epoch + 1) % 5 == 0:
+            print('Epoch:{:04d}'.format(epoch+1), 'train loss:{:.3f}'.format(train_loss), 'acc:{:.2f}'.format(train_acc))
+            print('validation loss:{:.3f}'.format(valid_loss), 'acc:{:.2f}'.format(valid_acc))
+            print()
         if valid_loss < best:
             best = valid_loss
             best_epoch = epoch + 1
@@ -184,10 +194,21 @@ if __name__ == '__main__':
         
         writer.add_scalar('Loss/val', valid_loss, epoch)
         writer.add_scalar('Acc/val', valid_acc, epoch)
-        
-    print('Finish')
-    print('start test')
+    
+    end_time = datetime.now().strftime('%m-%d_%H%M%S')
+    print('\nFinish training at', end_time)
+    
+    start_test_time = datetime.now().strftime('%m-%d_%H%M%S')
+    print('\nStart testing at', start_time)
     
     test_loss, test_acc = test(model, criterion, testloader, checkpt, conf['device'])
     print('Load {}th epoch'.format(best_epoch))
     print('test loss:{:.3f}'.format(test_loss), 'acc:{:.2f}'.format(test_acc))
+    
+    end_test_time = datetime.now().strftime('%m-%d_%H%M%S')
+    print('\nFinish training at', end_test_time)
+
+    print("'\nEntire Training finish with,")
+    prnt(conf)
+    print("\nStart:\t", start_time)
+    print("End:\t", end_test_time)
