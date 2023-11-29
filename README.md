@@ -2,7 +2,7 @@
 2023-2 Graduation Project code (Dept.of CSE, Konkuk Univ)
 
 ## Member
-- [Vaughn](https://github.com/webb-c)
+- [Vaughan](https://github.com/webb-c)
 - [UiJin](https://github.com/youuijin)
 - [HyunHee](https://github.com/aesa117)
 
