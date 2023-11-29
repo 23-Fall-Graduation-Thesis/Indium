@@ -1,6 +1,6 @@
 test.ipynb
 
-data/cifar10/cifar-10-batches-py/
+data/cifar10/
 data/cifar100/
 data/svhn/
 data/cub-200-2011/
@@ -10,3 +10,4 @@ dataset_dir/__pycache__/
 model/__pycache__/
 *.__pycache__
 __pycache__/
+model/weight

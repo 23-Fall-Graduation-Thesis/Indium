@@ -49,7 +49,7 @@ def train(model, criterion, optimizer, trainloader, device):
     train_loss = 0
     loss = 0
     train_acc = 0
-    for data, target in tqdm(trainloader, desc="train"):
+    for data, target in trainloader:
         optimizer.zero_grad()
         data, target = data.to(device), target.to(device)
         output = model(data)
@@ -71,7 +71,7 @@ def validation(model, criterion, validloader, device):
     valid_loss = 0
     valid_acc = 0
     with torch.no_grad():
-        for data, target in tqdm(validloader, desc="val"):
+        for data, target in validloader:
             data, target = data.to(device), target.to(device)
             output = model(data)
             valid_loss += criterion(output, target).item()
@@ -136,7 +136,7 @@ if __name__ == '__main__':
         if conf['mode'] == 'cus': # custom mode
             layers = conf['freeze']
             model = custom_finetuning(model, layers).to(conf['device'])
-            checkpt = "./model/weight/custom/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+".pt"
+            checkpt = "./model/weight/custom/"+str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+"_freeze"+layers+".pt"
             board_name = str(conf['model'])+"/"+str(conf['dataset'])+"_"+setting+"_freeze"+layers
             writer = SummaryWriter("./results/log/custom/"+board_name)
             os.makedirs("./model/weight/custom/"+str(conf['model'])+"/", exist_ok=True)
@@ -161,12 +161,13 @@ if __name__ == '__main__':
     best = 99999999
     best_epoch = 0
     bad_count = 0
-    for epoch in range(conf['epoch']):
+    
+    for epoch in tqdm(range(conf['epoch']), desc="train_val"):
         train_loss, train_acc = train(model, criterion, optimizer, trainloader, conf['device'])
         valid_loss, valid_acc = validation(model, criterion, validloader, conf['device'])
-        if (epoch + 1) % 5 == 0:
-            print('Epoch:{:04d}'.format(epoch+1), 'train loss:{:.3f}'.format(train_loss), 'acc:{:.2f}'.format(train_acc))
-            print('validation loss:{:.3f}'.format(valid_loss), 'acc:{:.2f}'.format(valid_acc))
+        # if (epoch + 1) % 5 == 0:
+        #     print('Epoch:{:04d}'.format(epoch+1), 'train loss:{:.3f}'.format(train_loss), 'acc:{:.2f}'.format(train_acc))
+        #     print('validation loss:{:.3f}'.format(valid_loss), 'acc:{:.2f}'.format(valid_acc))
         if valid_loss < best:
             best = valid_loss
             best_epoch = epoch + 1

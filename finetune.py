@@ -106,7 +106,7 @@ def select_test():
     criterion = nn.CrossEntropyLoss().to('cuda')
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, update_model.parameters()), lr=0.1)
 
-    _, _ = train(update_model, criterion, optimizer, trainloader, 'cuda')
+    # _, _ = train(update_model, criterion, optimizer, trainloader, 'cuda')
 
     for (name1, param1), (_, param2) in zip(origin_model.named_parameters(), update_model.named_parameters()):
         print(f"name: {name1}\tupdate: {not torch.equal(param1, param2)}")
