@@ -191,12 +191,13 @@ def plot_comparison_each_dataset_only_two(df_dataset, show=True, save=False):
                 heatmap_data[col_idx, row_idx] = value
             
             df_heatmap = pd.DataFrame(heatmap_data, index=[f"B{i+1}" for i in range(5)], columns=[f"B{i+1}" for i in range(5)])
-
             df_heatmap.fillna(0, inplace=True)
+            df_heatmap[df_heatmap == 0] = np.nan
+            mask = np.isnan(heatmap_data)
             
             sns.set()
             sns.set_theme(style="white")
-            sns.heatmap(ax=axes[i], data=df_heatmap, annot=True, fmt=".3f", cmap='viridis', annot_kws={"size": 10})
+            sns.heatmap(ax=axes[i], data=df_heatmap, annot=True, fmt=".3f", cmap='viridis', annot_kws={"size": 10}, mask=mask)
             axes[i].set_title("2-layer fintuning "+str(key)+" on "+str(dataset))
         
         if save:
