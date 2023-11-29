@@ -245,5 +245,5 @@ def save_plot_result(fig, vis_method, alias, conf=None, isimage=False):
         save_image(fig, file_path)
     
     print(f"Plot saved to {file_path}")
-    plt.close(fig)
+    plt.close()
 
