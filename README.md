@@ -1,5 +1,6 @@
 # Indium
-2023-2 Graduation Project code (Dept.of CSE, Konkuk Univ)
+2023-2 Graduation Project code (Dept.of CSE, Konkuk Univ)   
+layer freezing for prototype
 
 ## Member
 - [Vaughan](https://github.com/webb-c)
