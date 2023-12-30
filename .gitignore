@@ -13,3 +13,5 @@ model/weight
 __pycache__/
 model/weight
 ref/
+
+results/figure
