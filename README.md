@@ -1,4 +1,4 @@
-# Indium
+# LRS
 2023-2 Graduation Project code (Dept.of CSE, Konkuk Univ)   
 layer freezing for prototype
 
